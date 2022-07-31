@@ -122,6 +122,8 @@ async function parseGameAchievements(game, userId){
 }
 
 app.get('/getAchievementList', runAsyncWrapper(async function(req, res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
     let userName = req.query.userName;
     let userId = req.query.userId;
 
@@ -131,8 +133,8 @@ app.get('/getAchievementList', runAsyncWrapper(async function(req, res) {
 
     let games = await getUserGames(userId);
     let achievements = [];
-    // let N = games.length;
-    let N = Math.min(games.length,20);
+    let N = games.length;
+    // let N = Math.min(games.length,20);
     for (let i = 0; i < N; i++) {
         if (games[i].has_community_visible_stats) {
             let gameAchievements = await parseGameAchievements(games[i], userId);
