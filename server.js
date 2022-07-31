@@ -36,7 +36,6 @@ async function getUserIdFromName(name) {
   if (name == null || name == '' || name == 'undefined') {
     throw new Error('Name or user id is required');
   }
-//   id = await axios.get(`https://api.github.com/users/${name}`);
   let response = await axios.get('http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/', {
     params: {
         vanityurl: name,
@@ -101,6 +100,27 @@ async function getGameAchievements(gameId, userId){
   return [];
 }
 
+async function parseGameAchievements(game, userId){
+  let achievementsParsed = [];
+  let gameAchievements = await getGameAchievements(game.appid, userId);
+  for (let j = 0; j < gameAchievements.length; j++) {
+      if (gameAchievements[j].achieved == 1) {
+        if (gameAchievements[j].description == ""){
+          achievementsParsed.push(
+            game.name + ": " + gameAchievements[j].name
+          );
+        }else{
+          achievementsParsed.push(
+            game.name + ": " 
+            + gameAchievements[j].name + " | " 
+            + gameAchievements[j].description
+          );
+        }
+      }
+  }
+  return achievementsParsed;
+}
+
 app.get('/getAchievementList', runAsyncWrapper(async function(req, res) {
     let userName = req.query.userName;
     let userId = req.query.userId;
@@ -114,23 +134,10 @@ app.get('/getAchievementList', runAsyncWrapper(async function(req, res) {
     let N = games.length;
     // let N = Math.min(games.length,20);
     for (let i = 0; i < N; i++) {
-        let gameAchievements = await getGameAchievements(games[i].appid, userId);
-        for (let j = 0; j < gameAchievements.length; j++) {
-            if (gameAchievements[j].achieved == 1) {
-              if (gameAchievements[j].description == ""){
-                achievements.push(
-                  games[i].name + ": " + gameAchievements[j].name
-                );
-              }else{
-                achievements.push(
-                  games[i].name + ": " 
-                  + gameAchievements[j].name + " | " 
-                  + gameAchievements[j].description
-                );
-              }
-            }
+        if (games[i].has_community_visible_stats) {
+            let gameAchievements = await parseGameAchievements(games[i], userId);
+            achievements = achievements.concat(gameAchievements);
         }
-        // achievements = achievements.concat(gameAchievements);
     }
 
     res.json = {userId: userId, games: games, achievements: achievements};
