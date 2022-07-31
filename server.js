@@ -100,22 +100,57 @@ async function getGameAchievements(gameId, userId){
   return [];
 }
 
+async function getGameSchemaAchievements(gameId){
+  let response = await axios.get('http://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/', {
+    params: {
+        appid: gameId,
+        key: steam_api_key,
+        l: "en"
+    }
+  }).catch(throwFromAxiosErrorWithRedactedKey);
+
+  try {
+    return response.data.game.availableGameStats.achievements;
+  }catch(error){
+    if (error.name == 'TypeError'){
+      return [];
+    }
+    throw error;
+  }
+}
+
 async function parseGameAchievements(game, userId){
   let achievementsParsed = [];
   let gameAchievements = await getGameAchievements(game.appid, userId);
+  let gameSchemaAch = await getGameSchemaAchievements(game.appid);
   for (let j = 0; j < gameAchievements.length; j++) {
       if (gameAchievements[j].achieved == 1) {
+
+        let achievement = {}
+
         if (gameAchievements[j].description == ""){
-          achievementsParsed.push(
+          achievement.name = (
             game.name + ": " + gameAchievements[j].name
           );
         }else{
-          achievementsParsed.push(
+          achievement.name = (
             game.name + ": " 
             + gameAchievements[j].name + " | " 
             + gameAchievements[j].description
           );
         }
+
+        achievement.game = game.name;
+        achievement.game_id = game.appid;
+        achievement.image_url = null;
+
+        for (let k = 0; k < gameSchemaAch.length; k++) {
+          if (gameAchievements[j].apiname == gameSchemaAch[k].name) {
+            achievement.image_url = gameSchemaAch[k].icon;
+          }
+        }
+
+        achievementsParsed.push(achievement);
       }
   }
   return achievementsParsed;
@@ -148,7 +183,7 @@ app.get('/getAchievementList', runAsyncWrapper(async function(req, res) {
         }
     }
 
-    res.json = {userId: userId, games: games, achievements: achievements};
+    res.json = {userId: userId, achievements: achievements};
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify(res.json));
 }))
