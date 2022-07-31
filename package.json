@@ -1,10 +1,11 @@
 {
-  "name": "steam-api-token-gen",
+  "name": "steam-api-token-gen-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "DEMO APP",
   "main": "index.js",
   "scripts": {
-    "test": "test"
+    "test": "test",
+    "start": "node server.js"
   },
   "author": "Marek Cottingham",
   "license": "ISC",
