@@ -133,12 +133,18 @@ app.get('/getAchievementList', runAsyncWrapper(async function(req, res) {
 
     let games = await getUserGames(userId);
     let achievements = [];
+    let achievementsPromises = [];
     let N = games.length;
     // let N = Math.min(games.length,20);
     for (let i = 0; i < N; i++) {
         if (games[i].has_community_visible_stats) {
-            let gameAchievements = await parseGameAchievements(games[i], userId);
-            achievements = achievements.concat(gameAchievements);
+            achievementsPromises.push(parseGameAchievements(games[i], userId));
+        }
+    }
+    gameAchievements = await Promise.all(achievementsPromises);
+    for (let i = 0; i < gameAchievements.length; i++) {
+        if (gameAchievements[i] != null) {
+            achievements = achievements.concat(gameAchievements[i]);
         }
     }
 
